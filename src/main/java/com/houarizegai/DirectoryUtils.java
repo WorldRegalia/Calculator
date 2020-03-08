@@ -22,7 +22,61 @@ import javax.xml.stream.XMLStreamWriter;
  *
  * @author User
  */
+
+/*
+    1. need code to copy src to maven project
+    2. need to generate dependency xml for external dependency
+        -script to identify which projects have external dependencies
+                -get project.properties file from all projects
+                -parse files for entries that start with file.reference* and contain =lib/
+        -generate maven coordinates
+        -install dependencies to local maven repository if they can't be obtained from public repositories
+        -add additional repositories to pull down the dependencies
+    3.
+ */
 public class DirectoryUtils {
+
+    public static final String POM_INSTALL_FILE
+            = "<build>\n"
+            + "        <plugins>\n"
+            + "            <plugin>\n"
+            + "                <groupId>org.apache.maven.plugins</groupId>\n"
+            + "                <artifactId>maven-install-plugin</artifactId>\n"
+            + "                <version>2.5</version>\n"
+            + "                <executions>\n"
+            + "                    <execution>\n"
+            + "                        <id>install-1</id>\n"
+            + "                        <phase>initialize</phase>\n"
+            + "                        <goals>\n"
+            + "                            <goal>install-file</goal>\n"
+            + "                        </goals>\n"
+            + "                        <configuration>\n"
+            + "                            <groupId>all.test.install1</groupId>\n"
+            + "                            <artifactId>example-app1</artifactId>\n"
+            + "                            <version>1.0</version>\n"
+            + "                            <packaging>jar</packaging>\n"
+            + "                            <file>C:/Users/User/Documents/commons-lang3-3.9.jar</file>\n"
+            + "                        </configuration>\n"
+            + "                    </execution>\n"
+            + "                    <!-- Additional file installs to local repository -->\n"
+            + "                    <execution>\n"
+            + "                        <id>install-2</id>\n"
+            + "                        <phase>initialize</phase>\n"
+            + "                        <goals>\n"
+            + "                            <goal>install-file</goal>\n"
+            + "                        </goals>\n"
+            + "                        <configuration>\n"
+            + "                            <groupId>all.test.install2</groupId>\n"
+            + "                            <artifactId>example-app2</artifactId>\n"
+            + "                            <version>1.0</version>\n"
+            + "                            <packaging>jar</packaging>\n"
+            + "                            <file>C:/Users/User/Documents/commons-lang3-4.0.jar</file>\n"
+            + "                        </configuration>\n"
+            + "                    </execution>\n"
+            + "                </executions>\n"
+            + "            </plugin>\n"
+            + "        </plugins>\n"
+            + "    </build>";
 
     public static void copyFolder(File sourceFolder, File destinationFolder) throws IOException {
         //Check if sourceFolder is a directory or file
@@ -31,7 +85,6 @@ public class DirectoryUtils {
             //Verify if destinationFolder is already present; If not then create it
             if (!destinationFolder.exists()) {
                 destinationFolder.mkdir();
-                //System.out.println("Directory created :: " + destinationFolder);
             }
 
             //Get all files from source directory
@@ -42,13 +95,11 @@ public class DirectoryUtils {
                 File srcFile = new File(sourceFolder, file);
                 File destFile = new File(destinationFolder, file);
 
-                //Recursive function call
                 copyFolder(srcFile, destFile);
             }
         } else {
             //Copy the file content from one place to another 
             Files.copy(sourceFolder.toPath(), destinationFolder.toPath(), StandardCopyOption.REPLACE_EXISTING);
-            //System.out.println("File copied :: " + destinationFolder);
         }
     }
 
@@ -58,7 +109,7 @@ public class DirectoryUtils {
 
         for (File file : files) {
             if (!file.getName().startsWith("com")) {
-                System.out.println("Directory: " + file.getName());
+                System.out.println("Non com directory: " + file.getName());
             }
         }
     }
@@ -69,8 +120,6 @@ public class DirectoryUtils {
         for (File file : files) {
             Scanner scanner = new Scanner(file);
             String projectName = "";
-            boolean hasExternalDep = false;
-            System.out.println("NEW FILE");
             while (scanner.hasNextLine()) {
                 String line = scanner.nextLine();
                 //System.out.println(line);
@@ -80,8 +129,6 @@ public class DirectoryUtils {
                 }
                 if (line.startsWith("file.reference") && line.contains("=lib/")) {
                     projects.add(projectName);
-                    System.out.println("xmlproject.DirectoryUtils.getProjectsWithExtnalDependencies()");
-                    System.err.println(projectName);
                     scanner.close();
                     break;
                 }
